@@ -16,7 +16,7 @@ c = 2;
 n = size(orig_dataset, 1);
 dataset = orig_dataset;
 
-no = [zeros(201, 1) + 1; zeros(199, 1) + 2; zeros(200, 1) + 1; zeros(200, 1) + 2];
+no = [zeros(201, 1) + 1; zeros(199, 1) + 1; zeros(200, 1) + 2; zeros(200, 1) + 2];
 yes = [zeros(200, 1) + 1; zeros(200, 1) + 2; zeros(200, 1) + 2; zeros(200, 1) + 1];
 
 dataset = dataset - mean(dataset, 1);
@@ -41,8 +41,8 @@ title('colored by no - want less separation')
 
 
 %%
-symk = @(x) exp(-mpdist(x) / 2 * 4); % RBF kernel
-%symk = @(x) (x * x' + 2) .^ 3;   % polynomial kernel
+%symk = @(x) exp(-mpdist(x) .^ 2 / (2 * 3 ^ 2)); % RBF kernel
+symk = @(x) (x * x' + 2) .^ 3;   % polynomial kernel
 
 %%
 K = symk(dataset);
@@ -87,7 +87,7 @@ end
 
 AAT = AAT / eigs(AAT, 1);
 
-th = 1e-4;
+th = 1e-12;
 r = size(AAT, 1);
 
 [u, s] = eigs(AAT, r);
@@ -99,7 +99,7 @@ u = u(:, mask);
 %% distances
 term11 = zeros(n, c);
 for a = 1 : c
-    term11(:, c) = mean(K(:, no == c), 2);
+    term11(:, a) = mean(K(:, no == a), 2);
 end
 
 ind1 = [];
@@ -111,8 +111,15 @@ end
 
 D = zeros(n);
 
+%for ii = 1 : n
+%    for jj = 1 : n
+%        vec = K(ii, ind1) - K(jj, ind1) + term11(jj, ind2) - term11(ii, ind2);
+%        D(ii, jj) = sqrt(sum((vec * u ./ s') .^ 2, 2));
+%    end
+%end
+
 for jj = 1 : n
-    vec = K(jj : n, ind1) - K(jj, ind1) - term11(jj : n, ind2) + term11(jj, ind2);
+    vec = K(jj : n, ind1) - K(jj, ind1) + term11(jj, ind2) - term11(jj : n, ind2);
     D(jj : n, jj) = sqrt(sum((vec * u ./ s') .^ 2, 2));
 end
 
@@ -123,8 +130,8 @@ D = D + (D' .* (1 - eye(n)));
 %u = umap();
 %u.metric = 'precomputed';
 %R = u.fit(D);
-R = tsne(D, [], 2);
-%R = mdscale(D, 2);
+%R = tsne(D, [], 2);
+R = mdscale(D, 2);
 
 %%
 
